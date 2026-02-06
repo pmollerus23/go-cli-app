@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
@@ -14,6 +16,7 @@ type Task struct {
 	id          string
 	name        string
 	description string
+	category    string
 	status      TaskStatus
 }
 
@@ -34,18 +37,63 @@ type TaskManager struct {
 var (
 	ErrReadTitle       = errors.New("failed to read task title")
 	ErrReadDescription = errors.New("failed to read task description")
+	// ErrTaskFileNotExist = errors.New(".task error does not exist in working directory tree")
 )
 
-func main() {
-	defer cleanUp()
-	fmt.Println("Starting program...")
+func parseTaskFileFromPath(filePath string) (bool, error) {
+	_, err := os.Open(filePath) // For read access.
+	if err != nil {
+		log.Fatal(err)
+		return false, err
+	}
+	return true, nil
+}
 
-	if len(os.Args[1:]) == 0 {
-		helpDisplay()
+func initializeTaskRepository() {
+
+	_, err := findTaskFile()
+	if err == nil {
+		fmt.Println(`Repository already initialized.`)
+		return
+
+	} else {
+		fmt.Println("Initializing repository ...")
+	}
+
+}
+
+func main() {
+
+	var arg_1 string
+
+	if len(os.Args[1:]) > 0 {
+		arg_1 = os.Args[1]
+		if arg_1 == "init" {
+			initializeTaskRepository()
+			return
+		}
+
+	} else {
+		_, err := findRepositoryPath()
+		if err != nil {
+			return
+		}
+		if len(os.Args[1:]) == 0 {
+			helpDisplay()
+			return
+		} else {
+			arg_1 = os.Args[1]
+		}
+	}
+
+	taskFilePath, err := findRepositoryPath()
+	if err != nil {
 		return
 	}
 
-	arg_1 := os.Args[1]
+	_, err = parseTaskFileFromPath(taskFilePath)
+
+	// fmt.Println(_)
 
 	taskManager := &TaskManager{}
 
@@ -64,12 +112,15 @@ func main() {
 
 	case "list":
 		taskManager.ListTasks()
+	default:
+		fmt.Println("Unrecognized command:", arg_1)
 	}
 
 }
 
 func cleanUp() {
-	fmt.Println("Ending program.")
+	fmt.Println("Exiting")
+	os.Exit(0)
 
 }
 
@@ -113,11 +164,52 @@ func NewTask() (*Task, error) {
 		id:          uuid.New().String(),
 		name:        title,
 		description: description,
+		category:    "",
 		status:      Pending,
 	}, nil
 }
 
 func (tm TaskManager) ListTasks() {
-	fmt.Println(tm.taskList)
-	// return tm.taskList
+	if len(tm.taskList) > 0 {
+		fmt.Println(tm.taskList)
+	}
+}
+
+func findTaskFile() (string, error) {
+	// Start from current directory
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// Walk up until we find .task or hit root
+	for {
+		taskPath := filepath.Join(dir, ".task")
+
+		if _, err := os.Stat(taskPath); err == nil {
+			// fmt.Println(".task file found at path:", taskPath)
+			return taskPath, nil
+		}
+
+		// Get parent directory
+		parent := filepath.Dir(dir)
+
+		// If we've reached root, stop
+		if parent == dir {
+			return "", os.ErrNotExist
+		}
+
+		dir = parent
+	}
+}
+
+func findRepositoryPath() (string, error) {
+	taskFilePath, err := findTaskFile()
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			fmt.Println(`.task repository not found. Use 'task init' to initialize a repository`)
+			return "", os.ErrNotExist
+		}
+	}
+	return taskFilePath, nil
 }
