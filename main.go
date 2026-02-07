@@ -30,14 +30,13 @@ const (
 )
 
 type TaskManager struct {
-	userId   string
+	userID   string
 	taskList []Task
 }
 
 var (
 	ErrReadTitle       = errors.New("failed to read task title")
 	ErrReadDescription = errors.New("failed to read task description")
-	// ErrTaskFileNotExist = errors.New(".task error does not exist in working directory tree")
 )
 
 func parseTaskFileFromPath(filePath string) (bool, error) {
@@ -63,27 +62,16 @@ func initializeTaskRepository() {
 }
 
 func main() {
+	if len(os.Args) < 2 {
+		helpDisplay()
+		return
+	}
 
-	var arg_1 string
+	cmd := os.Args[1]
 
-	if len(os.Args[1:]) > 0 {
-		arg_1 = os.Args[1]
-		if arg_1 == "init" {
-			initializeTaskRepository()
-			return
-		}
-
-	} else {
-		_, err := findRepositoryPath()
-		if err != nil {
-			return
-		}
-		if len(os.Args[1:]) == 0 {
-			helpDisplay()
-			return
-		} else {
-			arg_1 = os.Args[1]
-		}
+	if cmd == "init" {
+		initializeTaskRepository()
+		return
 	}
 
 	taskFilePath, err := findRepositoryPath()
@@ -93,11 +81,9 @@ func main() {
 
 	_, err = parseTaskFileFromPath(taskFilePath)
 
-	// fmt.Println(_)
-
 	taskManager := &TaskManager{}
 
-	switch arg_1 {
+	switch cmd {
 	case "add":
 		err := taskManager.addTask()
 		if err != nil {
@@ -109,19 +95,16 @@ func main() {
 				fmt.Printf("Reader failure: %v\n", err)
 			}
 		}
-
 	case "list":
 		taskManager.ListTasks()
 	default:
-		fmt.Println("Unrecognized command:", arg_1)
+		fmt.Println("Unrecognized command:", cmd)
 	}
-
 }
 
 func cleanUp() {
 	fmt.Println("Exiting")
 	os.Exit(0)
-
 }
 
 func helpDisplay() {
@@ -135,15 +118,12 @@ func (tm *TaskManager) addTask() error {
 		return err
 	}
 	fmt.Printf("Task created: %s\n", task.name)
-	// return nil
-
 	tm.taskList = append(tm.taskList, *task)
 	return nil
 }
 
 func NewTask() (*Task, error) {
 	reader := bufio.NewReader(os.Stdin)
-	// defer reader.Discard()
 	// Read title
 	fmt.Print("Enter task title: ")
 	title, err := reader.ReadString('\n')
@@ -187,7 +167,6 @@ func findTaskFile() (string, error) {
 		taskPath := filepath.Join(dir, ".task")
 
 		if _, err := os.Stat(taskPath); err == nil {
-			// fmt.Println(".task file found at path:", taskPath)
 			return taskPath, nil
 		}
 
