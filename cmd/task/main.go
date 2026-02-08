@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -22,16 +23,22 @@ func main() {
 		return
 	}
 
-	taskFilePath, err := repository.FindRepositoryPath()
+	repositoryFilePath, err := repository.FindRepositoryPath()
 	if err != nil {
 		return
 	}
 
-	if _, err := repository.ParseTaskFileFromPath(taskFilePath); err != nil {
+	if _, err := repository.ValidateTaskFile(repositoryFilePath); err != nil {
 		return
 	}
 
-	taskManager := &task.TaskManager{}
+	// Loading existing repository file into global struct
+	var taskManager repository.Repository
+	repositoryFileData, err := os.ReadFile(repositoryFilePath)
+	err = json.Unmarshal(repositoryFileData, &taskManager)
+	if err != nil {
+		fmt.Printf("Error un-marshaling repository file: %v\n", err)
+	}
 
 	switch cmd {
 	case "add":
