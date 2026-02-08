@@ -10,8 +10,31 @@ import (
 )
 
 type Repository struct {
-	UserID   string       `json:"user_id"`
-	TaskList []task.Task  `json:"task_list"`
+	UserID   string      `json:"user_id"`
+	TaskList []task.Task `json:"task_list"`
+}
+
+func LoadRepositoryFromFile() (*Repository, error) {
+
+	var repository Repository
+
+	repositoryFilePath, err := FindRepositoryFile()
+	if err != nil {
+		fmt.Println(".task.json repository not found. Use 'task init' to initialize a repository")
+		return nil, err
+	}
+
+	if _, err := ValidateTaskFile(repositoryFilePath); err != nil {
+		return nil, err
+	}
+	repositoryFileData, err := os.ReadFile(repositoryFilePath)
+
+	err = json.Unmarshal(repositoryFileData, &repository)
+	if err != nil {
+		fmt.Printf("Error un-marshaling repository file: %v\n", err)
+	}
+	return &repository, nil
+
 }
 
 func (tm *Repository) AddTask() error {
@@ -68,18 +91,18 @@ func ValidateTaskFile(filePath string) (bool, error) {
 
 }
 
-func InitializeTaskRepository() (*Repository, error) {
+func InitializeTaskRepository() error {
 	_, err := FindRepositoryFile()
 	if err == nil {
 		fmt.Println(`Repository already initialized.`)
-		return nil, err
+		return err
 
 	} else {
 		fmt.Println("Initializing repository ...")
 		f, err := os.Create(".task.json")
 		if err != nil {
 			fmt.Println("Error creating .task file")
-			return nil, err
+			return err
 		}
 
 		repository := &Repository{}
@@ -87,15 +110,15 @@ func InitializeTaskRepository() (*Repository, error) {
 		jsonData, err := json.MarshalIndent(repository, "", "  ") // Use 2 spaces for indentation
 		if err != nil {
 			fmt.Printf("Error marshalling JSON: %s\n", err)
-			return nil, err
+			return err
 		}
 
 		if err := os.WriteFile(f.Name(), jsonData, 0644); err != nil {
-			return nil, err
+			return err
 		}
 
 		fmt.Println("Repository initialized")
-		return repository, nil
+		return nil
 	}
 }
 
@@ -126,13 +149,13 @@ func FindRepositoryFile() (string, error) {
 	}
 }
 
-func FindRepositoryPath() (string, error) {
-	taskFilePath, err := FindRepositoryFile()
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			fmt.Println(`.task.json repository not found. Use 'task init' to initialize a repository`)
-			return "", os.ErrNotExist
-		}
-	}
-	return taskFilePath, nil
-}
+// func FindRepositoryPath() (string, error) {
+// 	taskFilePath, err := FindRepositoryFile()
+// 	if err != nil {
+// 		if errors.Is(err, os.ErrNotExist) {
+// 			fmt.Println(`.task.json repository not found. Use 'task init' to initialize a repository`)
+// 			return "", os.ErrNotExist
+// 		}
+// 	}
+// 	return taskFilePath, nil
+// }
