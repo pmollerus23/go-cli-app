@@ -38,6 +38,14 @@ func (r *Repository) AddTask() (*task.Task, error) {
 		return nil, err
 	}
 	r.Tasks = append(r.Tasks, *t)
+	data, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("marshalling repository: %w", err)
+	}
+
+	if err := os.WriteFile(".task.json", data, 0644); err != nil {
+		return nil, fmt.Errorf("writing repository file: %w", err)
+	}
 	return t, nil
 }
 
