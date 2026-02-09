@@ -1,73 +1,88 @@
 package repository
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"task-manager/internal/task"
 )
 
-func ParseTaskFileFromPath(filePath string) (bool, error) {
-	file, err := os.Open(filePath)
+type Repository struct {
+	UserID string      `json:"user_id"`
+	Tasks  []task.Task `json:"task_list"`
+}
+
+func LoadRepositoryFromFile() (*Repository, error) {
+	path, err := FindRepositoryFile()
 	if err != nil {
-		return false, err
+		return nil, fmt.Errorf("finding repository: %w", err)
 	}
-	defer file.Close()
-	return true, nil
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading repository: %w", err)
+	}
+
+	repo := &Repository{}
+	if err := json.Unmarshal(data, repo); err != nil {
+		return nil, fmt.Errorf("parsing repository: %w", err)
+	}
+
+	return repo, nil
 }
 
-func InitializeTaskRepository() {
-	_, err := FindTaskFile()
-	if err == nil {
-		fmt.Println(`Repository already initialized.`)
-		return
-
-	} else {
-		fmt.Println("Initializing repository ...")
-		_, err := os.Create(".task")
-		if err != nil {
-			fmt.Println("Error creating .task file")
-			return
-		}
-		fmt.Println("Repository initialized")
-		return
+func (r *Repository) AddTask() (*task.Task, error) {
+	t, err := task.NewTask()
+	if err != nil {
+		return nil, err
 	}
+	r.Tasks = append(r.Tasks, *t)
+	data, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("marshalling repository: %w", err)
+	}
+
+	if err := os.WriteFile(".task.json", data, 0644); err != nil {
+		return nil, fmt.Errorf("writing repository file: %w", err)
+	}
+	return t, nil
 }
 
-func FindTaskFile() (string, error) {
-	// Start from current directory
+func InitializeTaskRepository() error {
+	if _, err := FindRepositoryFile(); err == nil {
+		return fmt.Errorf("repository already initialized")
+	}
+
+	repo := &Repository{}
+	data, err := json.MarshalIndent(repo, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshalling repository: %w", err)
+	}
+
+	if err := os.WriteFile(".task.json", data, 0644); err != nil {
+		return fmt.Errorf("writing repository file: %w", err)
+	}
+
+	return nil
+}
+
+func FindRepositoryFile() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 
-	// Walk up until we find .task or hit root
 	for {
-		taskPath := filepath.Join(dir, ".task")
-
+		taskPath := filepath.Join(dir, ".task.json")
 		if _, err := os.Stat(taskPath); err == nil {
 			return taskPath, nil
 		}
 
-		// Get parent directory
 		parent := filepath.Dir(dir)
-
-		// If we've reached root, stop
 		if parent == dir {
 			return "", os.ErrNotExist
 		}
-
 		dir = parent
 	}
-}
-
-func FindRepositoryPath() (string, error) {
-	taskFilePath, err := FindTaskFile()
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			fmt.Println(`.task repository not found. Use 'task init' to initialize a repository`)
-			return "", os.ErrNotExist
-		}
-	}
-	return taskFilePath, nil
 }

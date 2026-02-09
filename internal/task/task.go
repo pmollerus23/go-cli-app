@@ -10,11 +10,11 @@ import (
 )
 
 type Task struct {
-	ID          string
-	Name        string
-	Description string
-	Category    string
-	Status      TaskStatus
+	ID          string     `json:"id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Category    string     `json:"category"`
+	Status      TaskStatus `json:"status"`
 }
 
 func NewTask() (*Task, error) {
