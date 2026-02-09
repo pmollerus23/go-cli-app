@@ -24,12 +24,12 @@ func LoadRepositoryFromFile() (*Repository, error) {
 		return nil, fmt.Errorf("reading repository: %w", err)
 	}
 
-	var repo Repository
-	if err := json.Unmarshal(data, &repo); err != nil {
+	repo := &Repository{}
+	if err := json.Unmarshal(data, repo); err != nil {
 		return nil, fmt.Errorf("parsing repository: %w", err)
 	}
 
-	return &repo, nil
+	return repo, nil
 }
 
 func (r *Repository) AddTask() (*task.Task, error) {
