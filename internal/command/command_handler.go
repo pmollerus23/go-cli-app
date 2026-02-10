@@ -49,5 +49,10 @@ func HandleArgs(args []string) error {
 }
 
 func helpDisplay() {
-	fmt.Println("To use this tool, pass an argument!")
+	fmt.Println(`Usage: task <command>
+
+Commands:
+  init        Initialize a new task repository
+  add         Create a new task
+  list        List all tasks`)
 }

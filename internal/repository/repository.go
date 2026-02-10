@@ -16,7 +16,7 @@ type Repository struct {
 func LoadRepositoryFromFile() (*Repository, error) {
 	path, err := FindRepositoryFile()
 	if err != nil {
-		return nil, fmt.Errorf("finding repository: %w", err)
+		return nil, fmt.Errorf(".task directory not found. Run 'task init' to initialize task folder")
 	}
 
 	data, err := os.ReadFile(path)
