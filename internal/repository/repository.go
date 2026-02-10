@@ -43,7 +43,7 @@ func (r *Repository) AddTask() (*task.Task, error) {
 		return nil, fmt.Errorf("marshalling repository: %w", err)
 	}
 
-	if err := os.WriteFile(".task.json", data, 0644); err != nil {
+	if err := os.WriteFile(".task/repo.json", data, 0644); err != nil {
 		return nil, fmt.Errorf("writing repository file: %w", err)
 	}
 	return t, nil
@@ -60,8 +60,12 @@ func InitializeTaskRepository() error {
 		return fmt.Errorf("marshalling repository: %w", err)
 	}
 
-	if err := os.WriteFile(".task.json", data, 0644); err != nil {
-		return fmt.Errorf("writing repository file: %w", err)
+	if err := os.Mkdir(".task", 0755); err != nil {
+		return fmt.Errorf("creating task directory: %w", err)
+	}
+
+	if err := os.WriteFile(".task/repo.json", data, 0644); err != nil {
+		return fmt.Errorf("writing repo file: %w", err)
 	}
 
 	return nil
@@ -73,8 +77,11 @@ func FindRepositoryFile() (string, error) {
 		return "", err
 	}
 
+	repoDir := ".task/"
+	repoFile := "repo.json"
+
 	for {
-		taskPath := filepath.Join(dir, ".task.json")
+		taskPath := filepath.Join(dir, repoDir, repoFile)
 		if _, err := os.Stat(taskPath); err == nil {
 			return taskPath, nil
 		}
