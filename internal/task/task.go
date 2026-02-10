@@ -15,6 +15,7 @@ type Task struct {
 	Description string     `json:"description"`
 	Category    string     `json:"category"`
 	Status      TaskStatus `json:"status"`
+	//TODO add DateCreated, Date Updated
 }
 
 func NewTask() (*Task, error) {

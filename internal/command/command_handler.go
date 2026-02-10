@@ -34,8 +34,12 @@ func HandleArgs(args []string) error {
 		}
 		fmt.Printf("Task created: %s\n", t.Name)
 	case "list":
-		for _, t := range repo.Tasks {
-			fmt.Println(t)
+		if len(repo.Tasks) == 0 {
+			fmt.Println("no active tasks")
+			return nil
+		}
+		for i, t := range repo.Tasks {
+			fmt.Printf("[%d] %s\n    Description: %s\n    Status:      %s\n", i+1, t.Name, t.Description, t.Status)
 		}
 	default:
 		return fmt.Errorf("unrecognized command: %s", cmd)
