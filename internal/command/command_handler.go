@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"strconv"
 	"task-manager/internal/repository"
 )
 
@@ -41,6 +42,23 @@ func HandleArgs(args []string) error {
 		for i, t := range repo.Tasks {
 			fmt.Printf("[%d] %s\n    Description: %s\n    Status:      %s\n", i+1, t.Name, t.Description, t.Status)
 		}
+	case "delete":
+		if len(repo.Tasks) == 0 {
+			fmt.Println("no active tasks")
+			return nil
+		}
+		if len(args) < 3 {
+			return fmt.Errorf("usage: task delete <number>")
+		}
+		num, err := strconv.Atoi(args[2])
+		if err != nil {
+			return fmt.Errorf("invalid task number: %s", args[2])
+		}
+		t, err := repo.DeleteTaskByNumber(num)
+		if err != nil {
+			return fmt.Errorf("deleting task: %w", err)
+		}
+		fmt.Printf("Deleted task: %s\n", t.Name)
 	default:
 		return fmt.Errorf("unrecognized command: %s", cmd)
 	}

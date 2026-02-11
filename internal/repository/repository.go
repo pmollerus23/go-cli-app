@@ -49,6 +49,30 @@ func (r *Repository) AddTask() (*task.Task, error) {
 	return t, nil
 }
 
+func (r *Repository) DeleteTaskByNumber(num int) (*task.Task, error) {
+	if num < 1 || num > len(r.Tasks) {
+		return nil, fmt.Errorf("task number %d out of range (1-%d)", num, len(r.Tasks))
+	}
+	return r.DeleteTask(r.Tasks[num-1].ID)
+}
+
+func (r *Repository) DeleteTask(id string) (*task.Task, error) {
+	for i, t := range r.Tasks {
+		if t.ID == id {
+			r.Tasks = append(r.Tasks[:i], r.Tasks[i+1:]...)
+			data, err := json.MarshalIndent(r, "", "  ")
+			if err != nil {
+				return nil, fmt.Errorf("marshalling repository: %w", err)
+			}
+			if err := os.WriteFile(".task/repo.json", data, 0644); err != nil {
+				return nil, fmt.Errorf("writing repository file: %w", err)
+			}
+			return &t, nil
+		}
+	}
+	return nil, fmt.Errorf("task with id %s not found", id)
+}
+
 func InitializeTaskRepository() error {
 	if _, err := FindRepositoryFile(); err == nil {
 		return fmt.Errorf("repository already initialized")
